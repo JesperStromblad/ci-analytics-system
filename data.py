@@ -1,5 +1,6 @@
 from pymongo import MongoClient
 import pandas as pd
+from functools import reduce
 
 # pprint library is used to make the output look more pretty
 from pprint import pprint
@@ -8,10 +9,13 @@ from pprint import pprint
 # Resource dataframe columns
 resource_columns = ["test_name", "execution_time", "memory"]
 
+# Trace dataframe columns
+trace_columns = ['test_name','test_func_calls', 'line_numbers', 'per_test_iterations', 'encode_per_test_cond']
+
 
 # connect to MongoDB, change the << MONGODB URL >> to reflect your own connection string
 client = MongoClient("mongodb://localhost:27017/admin")
-# mongodb is not accessible from outside because scripts are run on the server. We can obviously set username and password
+# In our case, mongodb is not accessible from outside world. We can obviously set username and password
 db=client.admin
 
 # Connect to the database
@@ -49,7 +53,7 @@ def get_last_five_commits(collection_name):
     return list_commit      
 
 # Get execution time over time of different test cases
-def get_dataframe_by_commit(collection_name, commit):
+def get_dataframe_unit_test_by_commit(collection_name, commit, dataframe_columns, test_column):
     # List to store unit test data
     list_test_case_data = []
 
@@ -61,8 +65,8 @@ def get_dataframe_by_commit(collection_name, commit):
 
     # Iterate over all documents and store them to a list 
     for data in test_case_document:
-        list_test_case_data.append(eval(data['unit_test_data']))
-    df = pd.DataFrame([t for lst in list_test_case_data for t in lst], columns=resource_columns)
+        list_test_case_data.append(eval(data[test_column]))
+    df = pd.DataFrame([t for lst in list_test_case_data for t in lst], columns=dataframe_columns)
     return df 
 
 # Get either time or memory information, also one can slice dataframe based on per test case
@@ -85,13 +89,63 @@ def get_resource_average(df, column_name):
 
     return df.groupby('test_name', as_index=False).mean()
 
+# Get test result status
+def get_test_result_status(profiling_type, commit, df_column, test_column):
+    # Slice the dataframe to select only test name vs result for 
+    return get_dataframe_unit_test_by_commit(profiling_type, commit, df_column, test_column)
+
+
+
+
+
+def check_get_input_df(collection_name, commit):
+    
+    # Input tuple
+    list_tuple = []
+    # Collection Name
+    col = db[collection_name]
+
+    # Find documents by commit
+    document=col.find({'git_commit': {'$eq': commit}} )
+    
+    if collection_name == "inputcase":
+        for data in document:
+             list_tuple.append ((data["_key"], data["size"]))    
+
+        df = pd.DataFrame([t for t in list_tuple], columns=['_key', 'size'])
+    
+    elif collection_name == "trace":
+            for data in document:
+                list_tuple.append ((data["_key"], data['total_function_calls'], data['total_no_statements_executed'], data["total_no_iterations"], data['conditional_encode_value']))    
+            df = pd.DataFrame([t for t in list_tuple], columns=["_key", 'total_function_calls', 'total_no_statements_executed',"total_no_iterations",'conditional_encode_value'])
+
+    elif collection_name == "resource":    
+            for data in document:
+                list_tuple.append ((data["_key"], data['avg_mem'], data['avg_time']))    
+            df = pd.DataFrame([t for t in list_tuple], columns=["_key","avg_time" ,"avg_mem"])
+
+
+    return df
+
+
+
+
+# Merge all dataframe
+def merge_dataframes(commit):
+    return reduce(lambda x,y: pd.merge(x,y, on='_key', how='outer'), [check_get_input_df('inputcase', commit),
+                                                                       check_get_input_df('trace', commit),
+                                                                       check_get_input_df('resource', commit)
+                                                                       ])
+
+
+
 ## Usage of methods
 
 # Get list of commit
 commit_list = get_last_five_commits("inputcase")
 
 # Get execution time over different inputs for each test case
-df = get_dataframe_by_commit('resource', 'f1bc57db')
+df = get_dataframe_unit_test_by_commit('resource', 'f1bc57db', resource_columns, 'unit_test_data')
 
 
 # Get dataframe by resource
@@ -99,7 +153,12 @@ df = get_dataframe_by_commit('resource', 'f1bc57db')
 
 # Get average of resource by test case
 df = get_resource_average(df, "memory")
-print (df)
 
-# for test in df['test_name'].unique():
-#     print(df.loc[df['test_name'] == test])
+# Test Case 
+df = get_test_result_status('trace', 'f1bc57db', trace_columns, 'unit_test_info')
+
+
+
+# Merge dataframes
+df = merge_dataframes('f1bc57db')
+print (df)
