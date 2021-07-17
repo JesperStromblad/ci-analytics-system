@@ -1,7 +1,8 @@
 from pymongo import MongoClient
 import pandas as pd
 from functools import reduce
-
+from sklearn.cluster import KMeans, AgglomerativeClustering, AffinityPropagation, DBSCAN
+from sklearn.decomposition import PCA
 # pprint library is used to make the output look more pretty
 from pprint import pprint
 
@@ -10,7 +11,7 @@ from pprint import pprint
 resource_columns = ["test_name", "execution_time", "memory"]
 
 # Test-level trace dataframe columns
-trace_columns = ['test_name','test_func_calls', 'line_numbers', 'per_test_iterations', 'encode_per_test_cond']
+trace_columns = ['test_name','test_func_calls', 'line_numbers', 'per_test_iterations', 'encode_per_test_cond', 'result']
 
 # Input-level resource dataframe columns
 input_resource_columns = ["_key","avg_mem" ,"avg_time"]
@@ -22,7 +23,9 @@ input_trace_columns = ["_key", 'total_function_calls', 'total_no_statements_exec
 input_columns = ["_key", "size"]
 
 
+# Collection names
 
+collection_name = ["inputcase"]
 
 
 
@@ -36,12 +39,21 @@ db = client["ci-db"]
     
 
 # Get list of last five commit hash
-def get_last_five_commits(collection_name):
+def get_last_five_commits():
+
+    
+
     # Collection Name
-    col = db[collection_name]
+    col = db[collection_name[0]]
     
     # list of commit
     list_commit = []
+
+    # If commits are less than 5 then we add a negative symbol
+    if len(list_commit) < 5:
+        empty_commit = 5 - len(list_commit)    
+        for index in range(0,empty_commit):
+              list_commit.insert(index, "x")
 
     # Get list of distinct commit for the collection
     document = col.find().sort([("_id", 1)])
@@ -49,14 +61,9 @@ def get_last_five_commits(collection_name):
         if record["git_commit"] not in list_commit:
             list_commit.append(record["git_commit"])
     
-    #If there are less than 5 records then we append some dummy elements 
-    if len(list_commit) < 5:
-        empty_commit = 5 - len(list_commit)    
-        for index in range(0,empty_commit):
-              list_commit.insert(index, "empty")
 
     # Check if we have exactly five commits, we just return
-    elif len(list_commit) == 5:
+    if len(list_commit) == 5:
         return list_commit
 
     # In case if there are more than 5, select the recent five commit
@@ -163,15 +170,52 @@ def merge_test_level_dataframes(commit):
                                                                       
                                                                        ])
 
-    df = get_dataframe_unit_test_by_commit('resource', 'f1bc57db', resource_columns, 'unit_test_data')
+df = get_dataframe_unit_test_by_commit('resource', 'f1bc57db', resource_columns, 'unit_test_data')
+
+
+def normalized_data(df):
+    from sklearn import preprocessing
+    x = df.values #returns a numpy array
+    min_max_scaler = preprocessing.MinMaxScaler()
+    x_scaled = min_max_scaler.fit_transform(x)
+    normal_accumulated_df = pd.DataFrame(x_scaled)
+    return normal_accumulated_df
+
+
+def clustering(clustering_algo,df):
+    if clustering_algo == 'kmeans':
+        kmeans = KMeans(n_clusters = 5, init="k-means++", max_iter = 500, n_init = 10, random_state = 123)
+        identified_clusters = kmeans.fit_predict(df)
+        
+    elif clustering_algo == 'agglomerative':    
+        hc = AgglomerativeClustering(n_clusters = 5, affinity = "euclidean", linkage = "ward")
+        identified_clusters = hc.fit_predict(df)
+
+    elif clustering_algo == 'affinitypropagation':
+        hc = AffinityPropagation()
+        identified_clusters = hc.fit_predict(df)
+
+    elif clustering_algo == 'dbscan':
+        DBS = DBSCAN(eps = 0.2, min_samples = 40)
+        identified_clusters = DBS.fit_predict(df)
+
+    elif clustering_algo == 'gmm':
+        from sklearn import mixture
+        gmm = mixture.GaussianMixture(n_components=5, covariance_type='full').fit(df)
+        identified_clusters = gmm.predict(df)
+
+    
+    df['Cluster'] = identified_clusters
+    return df
+
 
 ## Usage of methods
 
 # Get list of commit
-commit_list = get_last_five_commits("inputcase")
+#commit_list = get_last_five_commits("inputcase")
 
 # Get execution time over different inputs for each test case
-df = get_dataframe_unit_test_by_commit('resource', 'f1bc57db', resource_columns, 'unit_test_data')
+df = get_dataframe_unit_test_by_commit('resource', '53cf30f5', resource_columns, 'unit_test_data')
 
 
 # Get dataframe by resource
@@ -181,14 +225,17 @@ df = get_dataframe_unit_test_by_commit('resource', 'f1bc57db', resource_columns,
 df = get_resource_average(df, "memory")
 
 # Test Case 
-df = get_test_result_status('trace', 'f1bc57db', trace_columns, 'unit_test_info')
-
+df = get_test_result_status('trace', '617fddea', trace_columns, 'unit_test_data')
 
 
 # Merge dataframes
-df = merge_dataframes('f1bc57db')
+# df = merge_dataframes('617fddea')
 
 
-# Merge test-level dataframe
-df = merge_test_level_dataframes('f1bc57db')
-print(df)
+# # Merge test-level dataframe
+# #df = merge_test_level_dataframes('617fddea')
+# #df = df.loc[:, df.columns != 'test_name']
+
+# df = normalized_data(df)
+
+# df = clustering('kmeans', df)

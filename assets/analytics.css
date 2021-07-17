@@ -324,8 +324,7 @@ p {
 
 #description {
   font-size: 1.5rem;
-  border-left: #44c4ff solid 1rem;
-  border-right: #44c4ff solid 1rem;
+  border-left: rgb(85, 255, 241) solid 1rem;
   padding-left: 1rem;
   max-width: 60rem;
   margin: 2rem 0 3rem 0;
@@ -377,7 +376,7 @@ a:hover {
 
 /* Buttons
 –––––––––––––––––––––––––––––––––––––––––––––––––– */
-.button,
+/* .button,
 button,
 input[type="submit"],
 input[type="reset"],
@@ -439,7 +438,7 @@ input[type="button"].button-primary:focus {
   color: #fff;
   background-color: #1eaedb;
   border-color: #1eaedb;
-}
+} */
 
 /* Forms
 –––––––––––––––––––––––––––––––––––––––––––––––––– */
@@ -653,7 +652,7 @@ hr {
 
 .rc-slider-dot-active,
 .rc-slider-handle {
-  border-color: hsl(184, 99%, 58%) !important;
+  border-color: hsl(184, 94%, 57%) !important;
 }
 
 .rc-slider-track {
@@ -862,3 +861,42 @@ svg {
 ._dash-undo-redo {
   display: none;
 }
+/*
+Buttons for commits
+*/
+
+.btn {
+  margin: 2.5rem 0.5rem 0 0;
+  background-color: #252e3f;
+  border-color: #252e3f;
+  font-size: 1.5rem;
+  text-transform: lowercase; 
+  color: white;
+  width:19%;
+  height: 10%;
+  border-bottom: 0.25rem solid transparent;
+  display: inline-block;
+  height: 38px;
+  padding: 0 30px;
+  }
+
+.btn:hover {
+  border-radius: 0;
+  border-color:transparent;
+  border-bottom: rgb(85, 255, 241) solid 0.25rem;
+  border-bottom-right-radius: 1px ;
+  border-bottom-left-radius: 1px ;
+  color: white;
+
+  }
+
+  .active {
+  border-radius: 0;
+  border-color:transparent;
+  border-bottom: rgb(85, 255, 241) solid 0.25rem;
+  border-bottom-right-radius: 1px ;
+  border-bottom-left-radius: 1px ;
+  color: white;
+  
+    }
+

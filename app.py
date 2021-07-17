@@ -5,8 +5,12 @@ import re
 import dash
 import dash_core_components as dcc
 import dash_html_components as html
+import dash_bootstrap_components as dbc
 import pandas as pd
 from dash.dependencies import Input, Output, State
+from data import *
+from dash import callback_context
+
 
 
 # Initialize app
@@ -16,6 +20,7 @@ app = dash.Dash(
     meta_tags=[
         {"name": "viewport", "content": "width=device-width, initial-scale=1.0"}
     ],
+    prevent_initial_callbacks=True
 )
 app.title = "CI analytics system"
 server = app.server
@@ -24,56 +29,21 @@ server = app.server
 
 
 
-YEARS = [2003, 2004 , 2005 ,2006,2007]
-
-BINS = [
-    "0-2",
-    "2.1-4",
-    "4.1-6",
-    "6.1-8",
-    "8.1-10",
-    "10.1-12",
-    "12.1-14",
-    "14.1-16",
-    "16.1-18",
-    "18.1-20",
-    "20.1-22",
-    "22.1-24",
-    "24.1-26",
-    "26.1-28",
-    "28.1-30",
-    ">30",
-]
-
-DEFAULT_COLORSCALE = [
-    "#f2fffb",
-    "#bbffeb",
-    "#98ffe0",
-    "#79ffd6",
-    "#6df0c8",
-    "#69e7c0",
-    "#59dab2",
-    "#45d0a5",
-    "#31c194",
-    "#2bb489",
-    "#25a27b",
-    "#1e906d",
-    "#188463",
-    "#157658",
-    "#11684d",
-    "#10523e",
-]
 
 DEFAULT_OPACITY = 0.8
 
-mapbox_access_token = "pk.eyJ1IjoicGxvdGx5bWFwYm94IiwiYSI6ImNrOWJqb2F4djBnMjEzbG50amg0dnJieG4ifQ.Zme1-Uzoi75IaFbieBDl3A"
-mapbox_style = "mapbox://styles/plotlymapbox/cjvprkf3t1kns1cqjxuxmwixz"
+
+# Get commit
+
+def get_commits ():
+    return get_last_five_commits()
 
 # App layout
 
 app.layout = html.Div(
     id="root",
     children=[
+
         html.Div(
             id="header",
             children=[
@@ -86,34 +56,85 @@ app.layout = html.Div(
             ],
         ),
         html.Div(
-                            id="commit-slider-container",
-                            children=[
-                                html.P(
-                                    id="commit-slider-text",
-                                    children="Drag the slider when there are more than one commits",
-                                ),
-                                dcc.Slider(
-                                    id="commit-years-slider",
-                                    min=min(YEARS),
-                                    max=max(YEARS),
-                                    step=1,
-                                    value=max(YEARS),
-                                    marks={
-                                        str(year): {
-                                            "label": str(year),
-                                            "style": {"color": "#06C6F6"},
-                                        }
-                                        for year in YEARS
-                                    },
-                                ),
-                            ],
-                        ),
-   
+              id="container",
+              children=[
+              html.Button(
+                  id="btn-0",
+                  className="btn",
+                  n_clicks=0,
+                  children=get_commits()[0],
+                 
+              ),
+              html.Button(
+                  id="btn-1",
+                  className="btn",
+                  n_clicks=0,
+                  children=get_commits()[1]
+              ),
+              html.Button(
+                  id="btn-2",
+                  className="btn",
+                  n_clicks=0,
+                  children=get_commits()[2]
+              ),
+              html.Button(
+                  id="btn-3",
+                  className="btn",
+                  n_clicks=0,
+                  children=get_commits()[3]
+              ),
+              html.Button(
+                  id="btn-4",
+                  className="btn",
+                  n_clicks=0,
+                  children=get_commits()[4]
+              )        
+
+              ]
+        ),
+
     ],
 )
 
 
 
 
+# bottom_click_style = {
+#      "border-radius": "0",
+#      "border-color": "transparent",
+#      "border-bottom": "rgb(85, 255, 241) solid 0.25rem",
+#      "border-bottom-right-radius": "1px" ,
+#      "border-bottom-left-radius": "1px" ,
+#      "color": "white"
+# }
+
+#@app.callback( Output("button1", 'style'), [Input("button1", "n_clicks")])
+# @app.callback([Output("button"+str(i), 'style') for i in range(5)], [Input("button"+str(i), "n_clicks") for i in range(5)])
+@app.callback(
+    [Output(f"btn-{i}", "className") for i in range(0, 5)],
+    [Input(f"btn-{i}", "n_clicks") for i in range(0, 5)],
+)
+def focus_button(*args):
+    ctx = dash.callback_context
+
+    if not ctx.triggered or not any(args):
+        return ["btn" for _ in range(0, 5)]
+
+    # get id of triggering button
+    button_id = ctx.triggered[0]["prop_id"].split(".")[0]
+
+    id = button_id.split("-")[1]
+    id_to_int = int(id)
+    if get_commits()[id_to_int] == 'x':
+        return ["btn" if get_commits()[id_to_int] == 'x' else "btn" for i in range(0, 5)]
+
+    return [
+        "btn active" if button_id == f"btn-{i}" else "btn" for i in range(0, 5)
+    ]
+
+
+
+
+
 if __name__ == "__main__":
-    app.run_server(debug=True)
+    app.run_server(debug=True, host='0.0.0.0', port = 8050)
