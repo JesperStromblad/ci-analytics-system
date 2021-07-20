@@ -667,6 +667,8 @@ hr {
 –––––––––––––––––––––––––––––––––––––––––––––––––– */
 #heatmap-container {
   margin: 2.5rem 0 0 0;
+  width: 50%;
+  /*max-width: 960px;*/
   background-color: #252e3f;
 }
 
@@ -853,10 +855,10 @@ hr {
   margin-left: 1.5%;
 }
 
-div,
+/* div,
 svg {
   user-select: none !important;
-}
+} */
 
 ._dash-undo-redo {
   display: none;
@@ -899,4 +901,53 @@ Buttons for commits
   color: white;
   
     }
+
+
+  .level1-container {
+    margin: 2.5rem auto 0 auto;
+    width: 100%;
+    /*max-width: 960px;*/
+    display:flex;
+    flex-direction: row;
+    max-height: 40vh;
+  }
+
+  
+  .div-for-dropdown{
+    margin: 2.5rem 0 0 0;
+    background-color: #252e3f;
+    min-width: 80%;
+    
+  
+  }
+
+  /* .gauge-container{
+    margin: 2.5rem 0 0 2.5rem;
+    min-width: 20%;
+  } */
+
+  .gauge-container {
+    margin: 2.5rem 0 0 0;
+    width: 100%;
+    text-align: center;
+    color: white;
+    height: auto;
+
+  }
+  
+  .gauge-container svg {
+    width: 100%;
+    height: auto;
+  }
+  
+  .gauge-container > div > div > div > div {
+    color: white !important;
+  }
+  
+  /*pressure-gauge track*/
+  .track {
+    /* stroke: #f4d44d !important; */
+    stroke-width: 12;
+  }
+  
 

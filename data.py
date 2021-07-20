@@ -7,8 +7,10 @@ from sklearn.decomposition import PCA
 from pprint import pprint
 
 
-# Test-level resource dataframe columns
-resource_columns = ["test_name", "execution_time", "memory"]
+
+
+
+
 
 # Test-level trace dataframe columns
 trace_columns = ['test_name','test_func_calls', 'line_numbers', 'per_test_iterations', 'encode_per_test_cond', 'result']
@@ -36,12 +38,48 @@ db=client.admin
 
 # Connect to the database
 db = client["ci-db"]
-    
+
+
+# Memory
+memory = []
+
+# Initialize commit memory
+def init_commit_memory(list_commit):
+    memory.append(list_commit[len(list_commit)-1])
+
+
+# Update queue with Commit
+def update_commit_memory(commit_value): 
+
+    if commit_value != 'x': 
+        if commit_value != memory[0]:
+            memory.pop()
+            memory.append(commit_value)
+
+
+"""
+Get last five commits.
+"""
+
+def get_commits ():
+    return get_last_five_commits()
+
+# Return the clicked commit
+def get_last_commit():
+        if memory:
+            return memory
+        else:
+            return get_last_five_commits()[4]
+
+# Check the content of commit memory queue
+def check_commit_memory():
+    return memory
+
+
+
 
 # Get list of last five commit hash
 def get_last_five_commits():
-
-    
 
     # Collection Name
     col = db[collection_name[0]]
@@ -49,18 +87,21 @@ def get_last_five_commits():
     # list of commit
     list_commit = []
 
-    # If commits are less than 5 then we add a negative symbol
-    if len(list_commit) < 5:
-        empty_commit = 5 - len(list_commit)    
-        for index in range(0,empty_commit):
-              list_commit.insert(index, "x")
+  
 
     # Get list of distinct commit for the collection
     document = col.find().sort([("_id", 1)])
     for record in document:
         if record["git_commit"] not in list_commit:
             list_commit.append(record["git_commit"])
-    
+
+
+
+      # If commits are less than 5 then we add a negative symbol
+    if len(list_commit) < 5:
+        empty_commit = 5 - len(list_commit)    
+        for index in range(0,empty_commit):
+              list_commit.insert(index, "x")
 
     # Check if we have exactly five commits, we just return
     if len(list_commit) == 5:
@@ -72,8 +113,18 @@ def get_last_five_commits():
 
     return list_commit      
 
+
+
+
+
+#df = get_dataframe_unit_test_by_commit('resource', '53cf30f5', resource_columns, 'unit_test_data')
+
 # Get execution time over time of different test cases
-def get_dataframe_unit_test_by_commit(collection_name, commit, dataframe_columns, test_column, only_single_test_run=False):
+def get_dataframe_unit_test_by_commit(collection_name, commit,  only_single_test_run=False):
+    
+    # Test-level resource dataframe columns
+    dataframe_columns = ["test_name", "execution_time", "memory"]
+    
     # List to store unit test data
     list_test_case_data = []
 
@@ -84,14 +135,14 @@ def get_dataframe_unit_test_by_commit(collection_name, commit, dataframe_columns
     # Find documents by commit
     if only_single_test_run:
         test_case_document = col.find_one({'git_commit': {'$eq': commit}})
-        df = pd.DataFrame(eval(test_case_document[test_column]), columns=dataframe_columns)
+        df = pd.DataFrame(eval(test_case_document['unit_test_data']), columns=dataframe_columns)
 
     else:    
         test_case_document=col.find({'git_commit': {'$eq': commit}} )
 
         # Iterate over all documents and store them to a list 
         for data in test_case_document:
-            list_test_case_data.append(eval(data[test_column]))
+            list_test_case_data.append(eval(data['unit_test_data']))
         df = pd.DataFrame([t for lst in list_test_case_data for t in lst], columns=dataframe_columns)
     return df 
 
@@ -170,7 +221,7 @@ def merge_test_level_dataframes(commit):
                                                                       
                                                                        ])
 
-df = get_dataframe_unit_test_by_commit('resource', 'f1bc57db', resource_columns, 'unit_test_data')
+#df = get_dataframe_unit_test_by_commit('resource', 'f1bc57db', resource_columns, 'unit_test_data')
 
 
 def normalized_data(df):
@@ -212,20 +263,21 @@ def clustering(clustering_algo,df):
 ## Usage of methods
 
 # Get list of commit
-#commit_list = get_last_five_commits("inputcase")
+#commit_list = get_last_five_commits()
+
 
 # Get execution time over different inputs for each test case
-df = get_dataframe_unit_test_by_commit('resource', '53cf30f5', resource_columns, 'unit_test_data')
+#df = get_dataframe_unit_test_by_commit('resource', '53cf30f5', resource_columns, 'unit_test_data')
 
 
 # Get dataframe by resource
 #df = get_test_resource_information(df, "execution_time", "test_to_datetime")
 
 # Get average of resource by test case
-df = get_resource_average(df, "memory")
+#df = get_resource_average(df, "memory")
 
 # Test Case 
-df = get_test_result_status('trace', '617fddea', trace_columns, 'unit_test_data')
+#df = get_test_result_status('trace', '617fddea', trace_columns, 'unit_test_data')
 
 
 # Merge dataframes
@@ -239,3 +291,4 @@ df = get_test_result_status('trace', '617fddea', trace_columns, 'unit_test_data'
 # df = normalized_data(df)
 
 # df = clustering('kmeans', df)
+

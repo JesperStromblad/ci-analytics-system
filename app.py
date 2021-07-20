@@ -1,7 +1,7 @@
 import os
 import pathlib
 import re
-
+import time
 import dash
 import dash_core_components as dcc
 import dash_html_components as html
@@ -10,7 +10,8 @@ import pandas as pd
 from dash.dependencies import Input, Output, State
 from data import *
 from dash import callback_context
-
+import plotly.graph_objects as go
+import dash_daq as daq
 
 
 # Initialize app
@@ -20,34 +21,59 @@ app = dash.Dash(
     meta_tags=[
         {"name": "viewport", "content": "width=device-width, initial-scale=1.0"}
     ],
-    prevent_initial_callbacks=True
+    #prevent_initial_callbacks=True,
 )
 app.title = "CI analytics system"
 server = app.server
 
-# Load data
 
 
 
+##---------------------------
+## Functions for getting data
+##---------------------------
 
-DEFAULT_OPACITY = 0.8
+""""
+Getting data for unit test vs execution time
+"""
+def get_timeseries_data():
+
+    # Getting the commit value first    
+    commit_value = get_last_commit()
+
+    
+    # Get dataframe for resource topic based on last commit
+    df = get_dataframe_unit_test_by_commit('resource', commit_value)
+    # slice dataframe for test_name and execution time only
+    test_df = get_test_resource_information(df, 'execution_time')
+    return test_df
+
+""""
+Getting total execution time for each CI run
+"""
+
+def get_total_execution_time():
+    df = get_timeseries_data()
+    return (df['execution_time'].sum()) * 0.000277778
 
 
-# Get commit
 
-def get_commits ():
-    return get_last_five_commits()
+## ----------------------------------------
+## Initialization state for data collection
+##-----------------------------------------
+
+
+
+df = get_timeseries_data()
 
 # App layout
 
 app.layout = html.Div(
     id="root",
     children=[
-
         html.Div(
             id="header",
             children=[
-                #html.Img(id="logo", src=app.get_asset_url("dash-logo.png")),
                 html.H4(children="Analytics for Python Projects"),
                 html.P(
                     id="description",
@@ -55,6 +81,7 @@ app.layout = html.Div(
                 ),
             ],
         ),
+        html.Div(id='temp'),
         html.Div(
               id="container",
               children=[
@@ -85,7 +112,7 @@ app.layout = html.Div(
               ),
               html.Button(
                   id="btn-4",
-                  className="btn",
+                  className="btn active",
                   n_clicks=0,
                   children=get_commits()[4]
               )        
@@ -93,28 +120,73 @@ app.layout = html.Div(
               ]
         ),
 
+        html.Div(className='level1-container',
+                                                     
+                children = [ 
+                    html.Div(className='div-for-dropdown',
+                        children=[
+                            dcc.Dropdown(id='testselector',
+                                        options=[
+                                        {'label': i, 'value': i} for i in df["test_name"].unique()
+                                        ],
+                                        multi=True,
+                                        value = df['test_name'].drop_duplicates()[0],
+                                        style={'backgroundColor': '#1E1E1E'},
+                                        className='stockselector'),
+
+                            dcc.Graph(
+                                id="timeseries-container",
+                                figure=dict(
+                                    layout=dict(
+                                        plot_bgcolor="#252e3f",
+                                        paper_bgcolor="#252e3f",
+                                    )
+                                ),
+                            ),
+
+
+                        ],
+
+
+
+                        style={'color': '#1E1E1E'}
+                    ), 
+    
+                    html.Div(className='gauge-container',
+                            children=[
+                            daq.Gauge(
+                                        color='rgb(85, 255, 241)',
+                                        id="progress-gauge",
+                                        max=24,
+                                        min=0,
+                                        value=get_total_execution_time(),
+                                        label="Total execution time",
+                                        showCurrentValue=True,
+                                        units='Hours'
+                                    ),
+                            ],
+        )
+
+    
+    
+                ],
+                
+        ),
+        
+
     ],
 )
 
+"""
+Callback for button click and focus
+"""
 
-
-
-# bottom_click_style = {
-#      "border-radius": "0",
-#      "border-color": "transparent",
-#      "border-bottom": "rgb(85, 255, 241) solid 0.25rem",
-#      "border-bottom-right-radius": "1px" ,
-#      "border-bottom-left-radius": "1px" ,
-#      "color": "white"
-# }
-
-#@app.callback( Output("button1", 'style'), [Input("button1", "n_clicks")])
-# @app.callback([Output("button"+str(i), 'style') for i in range(5)], [Input("button"+str(i), "n_clicks") for i in range(5)])
 @app.callback(
     [Output(f"btn-{i}", "className") for i in range(0, 5)],
-    [Input(f"btn-{i}", "n_clicks") for i in range(0, 5)],
+    [Input(f"btn-{i}", "n_clicks") for i in range(0, 5)]
 )
 def focus_button(*args):
+
     ctx = dash.callback_context
 
     if not ctx.triggered or not any(args):
@@ -123,18 +195,86 @@ def focus_button(*args):
     # get id of triggering button
     button_id = ctx.triggered[0]["prop_id"].split(".")[0]
 
+    # Getting the id of the button
     id = button_id.split("-")[1]
-    id_to_int = int(id)
-    if get_commits()[id_to_int] == 'x':
-        return ["btn" if get_commits()[id_to_int] == 'x' else "btn" for i in range(0, 5)]
 
+    
+
+    # Convert the id from string to integer and then check if we don't have any commit, in such case there shouldnt be focus
+    id_to_int = int(id)
+    
+    commit_value = get_commits()[id_to_int]
+
+    if commit_value  == 'x':
+        return ["btn" if get_commits()[id_to_int] == 'x' else "btn" for i in range(0, 5)] 
+
+    update_commit_memory(commit_value)
+
+    # If there is a click on the button, then focus on the button
     return [
         "btn active" if button_id == f"btn-{i}" else "btn" for i in range(0, 5)
     ]
 
 
+@app.callback(
+    Output("timeseries-container", "figure"),
+    [Input('testselector', 'value')]
+)
+def timeseries_chart(selected_dropdown_value):
+ 
+    trace = []
+    df_sub = df
+    # Draw and append traces for each stock
+    for stock in selected_dropdown_value:
+        trace.append(go.Scatter(x=df_sub[df_sub['test_name'] == stock].index,
+                                 y=df_sub[df_sub['test_name'] == stock]['execution_time'],
+                                 mode='lines',
+                                 opacity=0.7,
+                                 name=stock,
+                                 textposition='bottom center')     
+                                 )
+    traces = [trace]
+    data = [val for sublist in traces for val in sublist]
+    # Define Figure
+    figure = {'data': data,
+              'layout': go.Layout(
+                  colorway=["#5E0DAC", '#FF4F00', '#375CB1', '#FF7400', '#FFF400', '#FF0056'],
+                  template='plotly_dark',
+                  paper_bgcolor='rgba(0, 0, 0, 0)',
+                  plot_bgcolor='rgba(0, 0, 0, 0)',
+                  margin={'t': 50},
+                  height=250,
+                  hovermode='x',
+                  autosize=True,
+                  title={'text': 'Unit Test Execution', 'font': {'color': 'white'}, 'x': 0.5},
+                  xaxis={'showticklabels': False, 'range': [df_sub.index.min(), df_sub.index.max()]},
+                  yaxis_title="Execution time (seconds)",
+                  xaxis_title="Test Case/s (input)",
+              ),
+              }
 
+    return figure
+
+
+
+
+
+# # Bar graph 
+# @app.callback(
+#     Output("bargraph-container", "figure"),
+#     [Input(f"btn-{i}", "n_clicks") for i in range(0, 5)],
+# )
+# def bar_chart(*args):
+
+#     q= check_commit_memory()
+#     fig = dict()
+
+#     return fig
 
 
 if __name__ == "__main__":
+
+    # We store commits before running the app. dc storage isn't working properly. This fulfills our requirement at the moment.
+    # We will have to check the issue
+    init_commit_memory(get_commits())
     app.run_server(debug=True, host='0.0.0.0', port = 8050)
