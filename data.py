@@ -12,8 +12,6 @@ from pprint import pprint
 
 
 
-# Test-level trace dataframe columns
-trace_columns = ['test_name','test_func_calls', 'line_numbers', 'per_test_iterations', 'encode_per_test_cond', 'result']
 
 # Input-level resource dataframe columns
 input_resource_columns = ["_key","avg_mem" ,"avg_time"]
@@ -120,10 +118,11 @@ def get_last_five_commits():
 #df = get_dataframe_unit_test_by_commit('resource', '53cf30f5', resource_columns, 'unit_test_data')
 
 # Get execution time over time of different test cases
-def get_dataframe_unit_test_by_commit(collection_name, commit,  only_single_test_run=False):
+def get_dataframe_unit_test_by_commit(collection_name, commit, dataframe_columns=None ,only_single_test_run=False):
     
     # Test-level resource dataframe columns
-    dataframe_columns = ["test_name", "execution_time", "memory"]
+    if collection_name == 'resource':
+        dataframe_columns = ["test_name", "execution_time", "memory"]
     
     # List to store unit test data
     list_test_case_data = []
@@ -139,7 +138,6 @@ def get_dataframe_unit_test_by_commit(collection_name, commit,  only_single_test
 
     else:    
         test_case_document=col.find({'git_commit': {'$eq': commit}} )
-
         # Iterate over all documents and store them to a list 
         for data in test_case_document:
             list_test_case_data.append(eval(data['unit_test_data']))
@@ -160,16 +158,19 @@ def get_test_resource_information(df, column_name, test_name=None):
 
 # Takes the average of either time or memory based on each test case
 def get_resource_average(df, column_name):
-
     # We can get either time or memory information
     df = df [['test_name', column_name]]
 
-    return df.groupby('test_name', as_index=False).mean()
+    group_mem =  df.groupby('test_name', as_index=False).mean()
 
+    return group_mem
 # Get test result status
-def get_test_result_status(profiling_type, commit, df_column, test_column):
+def get_test_result_status(profiling_type, commit):
+    # Test-level trace dataframe columns
+    trace_columns = ['test_name','test_func_calls', 'line_numbers', 'per_test_iterations', 'encode_per_test_cond', 'result']
+
     # Slice the dataframe to select only test name vs result for 
-    return get_dataframe_unit_test_by_commit(profiling_type, commit, df_column, test_column)
+    return get_dataframe_unit_test_by_commit(profiling_type, commit, trace_columns, 'unit_test_data')
 
 
 

@@ -12,6 +12,7 @@ from data import *
 from dash import callback_context
 import plotly.graph_objects as go
 import dash_daq as daq
+import plotly.express as px
 
 
 # Initialize app
@@ -57,6 +58,35 @@ def get_total_execution_time():
     return (df['execution_time'].sum()) * 0.000277778
 
 
+""""
+Getting total number of tests with success and failure
+"""
+def get_test_status():
+
+    # Getting the commit value first    
+    commit_value = get_last_commit()
+
+    return get_test_result_status('trace', commit_value)
+
+def get_test_success():
+    commit_value = get_last_commit()
+    df = get_test_result_status('trace', commit_value)
+    return df[df.result == 1].count().unique()[0]
+
+
+""""
+Getting average resource 
+"""
+# Getting the commit value first    
+commit_value = get_last_commit()
+
+# Get dataframe for resource topic based on last commit
+df = get_dataframe_unit_test_by_commit('resource', commit_value)
+
+# Calculate average memory for each test case
+mem_df = get_resource_average(df, 'memory')
+
+
 
 ## ----------------------------------------
 ## Initialization state for data collection
@@ -64,7 +94,6 @@ def get_total_execution_time():
 
 
 
-df = get_timeseries_data()
 
 # App layout
 
@@ -165,15 +194,67 @@ app.layout = html.Div(
                                         units='Hours'
                                     ),
                             ],
-        )
+                    )
 
     
     
                 ],
                 
         ),
-        
 
+        html.Div(className='level2-container',
+            children =[ 
+                            
+                            daq.LEDDisplay(
+                                className='left-pass-test-panel',
+                                label="Total tests",
+                                value=get_test_status()['test_name'].count(),
+                                size=64,
+                                color='rgb(85, 255, 241)',
+                                backgroundColor="transparent"
+                            ),
+                            html.Div(className="success-panel",
+                                children=[
+                                       daq.LEDDisplay(
+                                        className='pass-test-panel',
+                                        label="Total tests passed",
+                                        labelPosition="top",
+                                        value=get_test_success(),
+                                        size=20,
+                                        color='#15b7e8',
+                                        backgroundColor="transparent"
+                                    ),
+                                        daq.LEDDisplay(
+                                            className='fail-test-panel',
+                                            label="Total tests failure",
+                                            labelPosition="bottom",
+                                            value=(get_test_status()['test_name'].count()-get_test_success()),
+                                            size=20,
+                                            color='#f55b5b',
+                                            backgroundColor="transparent"
+                                    ) 
+                                    
+                                ]
+                                
+
+
+                            ),
+
+                            dcc.Graph(
+                                id="bar-container",
+                                figure=dict(
+                                    layout=dict(
+                                        plot_bgcolor="#252e3f",
+                                        paper_bgcolor="#252e3f",
+                                    )
+                                ),
+                            ),
+                               
+                        ],
+                
+        
+        )
+        
     ],
 )
 
@@ -248,7 +329,7 @@ def timeseries_chart(selected_dropdown_value):
                   autosize=True,
                   title={'text': 'Unit Test Execution', 'font': {'color': 'white'}, 'x': 0.5},
                   xaxis={'showticklabels': False, 'range': [df_sub.index.min(), df_sub.index.max()]},
-                  yaxis_title="Execution time (seconds)",
+                  yaxis_title="Execution time (s)",
                   xaxis_title="Test Case/s (input)",
               ),
               }
@@ -260,17 +341,38 @@ def timeseries_chart(selected_dropdown_value):
 
 
 # # Bar graph 
-# @app.callback(
-#     Output("bargraph-container", "figure"),
-#     [Input(f"btn-{i}", "n_clicks") for i in range(0, 5)],
-# )
-# def bar_chart(*args):
+@app.callback(
+    Output("bar-container", "figure"),
+    [Input("temp", "children")],
+)
+def bar_chart(no_args):
+    trace= go.Bar(x=mem_df.test_name,
+                                 y=mem_df.memory,
+                                 opacity=0.7,
+                                 textposition='outside')     
+                                 
 
-#     q= check_commit_memory()
-#     fig = dict()
+    data= [trace]
+    # Define Figure
+    figure = {'data': data,
+              'layout': go.Layout(
+                  colorway=['rgb(85, 255, 241)'],
+                  template='plotly_dark',
+                  paper_bgcolor='rgba(0, 0, 0, 0)',
+                  plot_bgcolor='rgba(0, 0, 0, 0)',
+                  margin={'t': 50},
+                  height=250,
+                  hovermode='x',
+                  autosize=True,
+                  title={'text': 'Memory utilization', 'font': {'color': 'white'}, 'x': 0.5},
+                  yaxis= {'type': 'log'},
+                  xaxis={'showticklabels': False, 'range': [mem_df.index.min(), mem_df.index.max()]},
+                  yaxis_title="Avg mem",
+                  xaxis_title="Test Cases",
+              ),
+              }
 
-#     return fig
-
+    return figure
 
 if __name__ == "__main__":
 

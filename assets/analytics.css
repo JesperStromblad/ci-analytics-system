@@ -915,7 +915,7 @@ Buttons for commits
   
   .div-for-dropdown{
     margin: 2.5rem 0 0 0;
-    background-color: #252e3f;
+    /* background-color: #252e3f; */
     min-width: 80%;
     
   
@@ -951,3 +951,33 @@ Buttons for commits
   }
   
 
+
+
+/* Panel for test status */
+.level2-container {
+    margin: 2.5rem auto 0 auto;
+    width: 100%;
+    /*max-width: 960px;*/
+    display:flex;
+    flex-direction: row;
+    max-height: 40vh;
+
+  }
+
+
+  .left-pass-test-panel{
+    color: white;
+  }
+
+  #success-panel{
+    display:flex;
+    flex-direction: column;
+  }
+
+  .pass-test-panel{
+    color: white;
+  }
+
+  .fail-test-panel{
+    color: white;
+  }
