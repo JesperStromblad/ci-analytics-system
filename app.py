@@ -74,6 +74,34 @@ def get_test_success():
     return df[df.result == 1].count().unique()[0]
 
 
+def test_summary_table():
+    table_header = [
+                    html.Thead(html.Tr([html.Th("First Name"), html.Th("Last Name")]))
+                   ]
+
+    row1 = html.Tr([html.Td("Arthur"), html.Td(daq.Indicator(
+                                                id='my-daq-indicator',
+                                                value=True,
+                                                color="#00cc96"
+                                                )  )])
+    row2 = html.Tr([html.Td("Ford"), html.Td("Prefect")])
+    row3 = html.Tr([html.Td("Zaphod"), html.Td("Beeblebrox")])
+    row4 = html.Tr([html.Td("Trillian"), html.Td("Astra")])
+
+    table_body = [
+                    html.Tbody([row1, row2, row3, row4])
+                 ]
+
+    return dbc.Table(
+                # using the same table as in the above example
+                table_header + table_body,
+                bordered=True,
+                dark=True,
+                hover=True,
+                responsive=True,
+                striped=True,
+            )
+
 """"
 Getting average resource 
 """
@@ -250,6 +278,12 @@ app.layout = html.Div(
                                 ),
                             ),
                                
+                            html.Div(className='test-summary', 
+                                children=[test_summary_table()],
+
+                            )
+
+
                         ],
                 
         
