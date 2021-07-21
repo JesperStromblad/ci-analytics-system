@@ -13,6 +13,7 @@ from dash import callback_context
 import plotly.graph_objects as go
 import dash_daq as daq
 import plotly.express as px
+import numpy as np
 
 
 # Initialize app
@@ -74,33 +75,32 @@ def get_test_success():
     return df[df.result == 1].count().unique()[0]
 
 
+""""
+Get status of the test result
+"""
+
 def test_summary_table():
+
+    table_rows = []
+
     table_header = [
-                    html.Thead(html.Tr([html.Th("First Name"), html.Th("Last Name")]))
-                   ]
+        html.Thead(html.Tr([html.Th("Test Case"), html.Th("Status")]))
+    ]
 
-    row1 = html.Tr([html.Td("Arthur"), html.Td(daq.Indicator(
-                                                id='my-daq-indicator',
-                                                value=True,
-                                                color="#00cc96"
-                                                )  )])
-    row2 = html.Tr([html.Td("Ford"), html.Td("Prefect")])
-    row3 = html.Tr([html.Td("Zaphod"), html.Td("Beeblebrox")])
-    row4 = html.Tr([html.Td("Trillian"), html.Td("Astra")])
 
-    table_body = [
-                    html.Tbody([row1, row2, row3, row4])
-                 ]
+    df=get_test_status()
+    df = df [['test_name', 'result']]
+    for index, row in df.iterrows():
+        if row['result'] == 1:
+            indicator = daq.Indicator( value=True, color="#f55b5b")  
+        else:
+            indicator = daq.Indicator( value=True, color="#15b7e8")  
+        row= html.Tr([html.Td(row['test_name']), html.Td(indicator)])
+        table_rows.append(row)
+    table_body = [html.Tbody(table_rows)]
+    
 
-    return dbc.Table(
-                # using the same table as in the above example
-                table_header + table_body,
-                bordered=True,
-                dark=True,
-                hover=True,
-                responsive=True,
-                striped=True,
-            )
+    return dbc.Table(table_header + table_body, bordered=True) 
 
 """"
 Getting average resource 

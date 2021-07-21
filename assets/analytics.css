@@ -981,3 +981,11 @@ Buttons for commits
   .fail-test-panel{
     color: white;
   }
+
+  .test-summary{
+    color: white;
+    display:block;
+    overflow: auto;
+    height: auto;
+
+  }
