@@ -102,6 +102,28 @@ def test_summary_table():
 
     return dbc.Table(table_header + table_body, bordered=True) 
 
+
+
+""""
+Getting features information for correlation matrix
+"""
+def get_data_for_matrix(matrix_data_type, commit_value):
+
+    if matrix_data_type == 'incorrelation':
+
+        # Getting the commit value first    
+
+        df = merge_dataframes(commit_value)
+        df.drop("_key", axis=1, inplace=True)
+    elif matrix_data_type == 'testcorrelation':
+        df = merge_test_level_dataframes(commit_value)
+        df.drop("test_name", axis=1, inplace=True)
+    return df
+
+
+
+current_commit_value = get_last_commit()
+
 """"
 Getting average resource 
 """
@@ -114,7 +136,11 @@ df = get_dataframe_unit_test_by_commit('resource', commit_value)
 # Calculate average memory for each test case
 mem_df = get_resource_average(df, 'memory')
 
+input_df = merge_dataframes(commit_value)
+input_df.drop("_key", axis=1, inplace=True)
 
+test_df = merge_test_level_dataframes(commit_value)
+test_df.drop("test_name", axis=1, inplace=True)
 
 ## ----------------------------------------
 ## Initialization state for data collection
@@ -287,6 +313,125 @@ app.layout = html.Div(
                         ],
                 
         
+        ),
+        html.Div(className='level3-container',
+                children= [
+                    html.Div(
+                            id="input-knob",
+                            children=[
+                                    dcc.Dropdown( 
+                                        id='input-cluster-dropdown',
+                                        options=[
+                                            {'label': 'Kmeans', 'value': 'kmeans'},
+                                            {'label': 'Agglomerative', 'value': 'agglomerative'},
+                                            {'label': 'AffinityPropagation', 'value': 'affinitypropagation'},
+                                            {'label': 'DBScan', 'value': 'dbscan'},
+                                             {'label': 'GMM', 'value': 'gmm'},
+                                        ],
+                                        placeholder="Select a Clustering Algorithm",
+                                        value = 'kmeans'
+                                    ),
+                                   
+                                    dcc.Dropdown(
+                                        id='feature-dropdown',
+                                        options=[
+                                            {'label': i, 'value': i} for i in input_df.columns
+                                        ],
+                                        multi=True,
+                                        placeholder="Select features",
+                                        value=['mem', 'time', 'ExeCond']
+                                    ),
+                                     dcc.Checklist(
+                                        id="checklist-input",
+                                        options=[
+                                            {'label': '2D', 'value': '2D'},
+                                            {'label': '3D', 'value': '3D'}
+                                        ],
+                                        value=['2D'],
+                                        labelStyle={'display': 'inline-block'}
+                                    ),
+                                    daq.Knob(
+                                        id='input-setting-knob',
+                                        min=0,
+                                        max=10,
+                                    ),
+                                    
+                            ] 
+                    ),
+                    html.Div(
+                            id="input-scatter-graph",
+                            children=[
+                                dcc.Graph(id='input-clustering-graph'),
+                            ]  
+                    ),
+                    html.Div(
+                            id="correlation-graph",
+                            children=[
+                                dcc.Dropdown( 
+                                        id='correlation-selection',
+                                        options=[
+                                            {'label': 'Input feature correlation', 'value': 'incorrelation'},
+                                            {'label': 'Test feature correlation', 'value': 'testcorrelation'},
+                                            
+                                        ],
+                                        placeholder="Select a correlation",
+                                        value='incorrelation'
+                                    ),
+                                dcc.Graph(id='heatmap-chart'),
+                            ]
+                           
+                    ),
+                    html.Div(
+                            id="test-scatter-graph",
+                            children=[
+                                dcc.Graph(id='test-clustering-graph'),
+                            ]  
+                    ),
+                    html.Div(
+                            id="test-knob",
+                            children=[
+                                    dcc.Dropdown( 
+                                        id='test-cluster-dropdown',
+                                        options=[
+                                            {'label': 'Kmeans', 'value': 'kmeans'},
+                                            {'label': 'Agglomerative', 'value': 'agglomerative'},
+                                            {'label': 'AffinityPropagation', 'value': 'affinitypropagation'},
+                                            {'label': 'DBScan', 'value': 'dbscan'},
+                                             {'label': 'GMM', 'value': 'gmm'},
+                                        ],
+                                        placeholder="Select a Clustering Algorithm",
+                                        value='kmeans'
+                                    ),
+                                   
+                                    dcc.Dropdown(
+                                        id='test-feature-dropdown',
+                                        options=[
+                                            {'label': i, 'value': i} for i in test_df.columns
+                                        ],
+                                        multi=True,
+                                        placeholder="Select features",
+                                        value=['test_func_calls', 'line_numbers', 'per_test_iterations']
+                                       
+                                    ),
+                                     dcc.Checklist(
+                                        id="checklist-test",
+                                        options=[
+                                            {'label': '2D', 'value': '2D'},
+                                            {'label': '3D', 'value': '3D'}
+                                        ],
+                                        labelStyle={'display': 'inline-block'},
+                                        value=['2D']
+                                    ),
+                                    daq.Knob(
+                                        id='test-setting-knob',
+                                        min=0,
+                                        max=10,
+                                        value=8
+                                    ),
+                                    
+                            ] 
+                    )
+                ]
         )
         
     ],
@@ -407,6 +552,103 @@ def bar_chart(no_args):
               }
 
     return figure
+
+@app.callback(
+Output("heatmap-chart", "figure"), 
+   [Input("correlation-selection", "value")]
+)
+def update_heat_map(selection):
+    df = get_data_for_matrix(selection, current_commit_value)
+    #df.drop("test_name", axis=1, inplace=True)
+    df=normalized_data(df,selection)
+    corr = df.corr()
+    trace = go.Heatmap(z=corr.values,
+                  x=corr.index.values,
+                  y=corr.columns.values)
+    data = [trace]
+    figure = {'data': data,
+              'layout': go.Layout(
+                  colorway=['rgb(85, 255, 241)'],
+                  template='plotly_dark',
+                  paper_bgcolor='rgba(0, 0, 0, 0)',
+                  plot_bgcolor='rgba(0, 0, 0, 0)',
+                  margin={'t': 50},
+                  height=250,
+                  hovermode='x',
+                  autosize=True,
+              ),
+              }
+
+    return figure
+
+@app.callback(
+Output("input-clustering-graph", "figure"), 
+[Input("input-cluster-dropdown", "value"),
+Input("feature-dropdown", "value"),
+Input("checklist-input", "value"),
+Input("input-setting-knob", "value"),
+]
+
+)
+def input_clustering(clustering_type, feature_name, check_list_type, cluster_value):
+    
+
+
+
+    df = normalized_data(input_df, 'incorrelation')
+    df = clustering(clustering_type,df)
+
+    if '2D' in check_list_type:
+             fig = px.scatter(x= df[feature_name[0]],y= df[feature_name[1]], color=df['Cluster'])
+    elif '3D' in check_list_type:
+            fig= px.scatter_3d(df, x = feature_name[0], y=feature_name[1], z=feature_name[2],
+              color='Cluster', opacity = 0.8, size='size', size_max=70, title="K-means")
+    #fig = dict()
+    fig.update_layout(colorway=['rgb(85, 255, 241)'],
+                  template='plotly_dark',
+                  paper_bgcolor='rgba(0, 0, 0, 0)',
+                  plot_bgcolor='rgba(0, 0, 0, 0)',
+                  margin={'t': 50},
+                  height=250,
+                  hovermode='x',
+                  autosize=True,)
+    return fig
+
+
+
+@app.callback(
+Output("test-clustering-graph", "figure"), 
+[Input("test-cluster-dropdown", "value"),
+Input("test-feature-dropdown", "value"),
+Input("checklist-test", "value"),
+Input("test-setting-knob", "value"),
+]
+
+)
+def test_clustering(clustering_type, feature_name, check_list_type, cluster_value):
+    
+    print (clustering_type, feature_name, check_list_type, cluster_value)
+
+    df = normalized_data(test_df, 'testcorrelation')
+    df = clustering(clustering_type,df)
+
+    if '2D' in check_list_type:
+             fig = px.scatter(x= df[feature_name[0]],y= df[feature_name[1]], color=df['Cluster'])
+    elif '3D' in check_list_type:
+            fig= px.scatter_3d(df, x = feature_name[0], y=feature_name[1], z=feature_name[2],
+              color='Cluster', opacity = 0.8, size_max=70, title="K-means")
+    #fig = dict()
+    fig.update_layout(colorway=['rgb(85, 255, 241)'],
+                  template='plotly_dark',
+                  paper_bgcolor='rgba(0, 0, 0, 0)',
+                  plot_bgcolor='rgba(0, 0, 0, 0)',
+                  margin={'t': 50},
+                  height=250,
+                  hovermode='x',
+                  autosize=True,)
+    return fig
+
+
 
 if __name__ == "__main__":
 

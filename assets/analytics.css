@@ -989,3 +989,37 @@ Buttons for commits
     height: auto;
 
   }
+
+  .level3-container {
+    margin: 2.5rem auto 0 auto;
+    width: 100%;
+    /*max-width: 960px;*/
+    display:flex;
+    flex-direction: row;
+    flex-wrap: wrap;
+    min-height: 40vh;
+
+  }
+  #input-knob{
+    width: 15%;
+    
+  }
+
+  #input-scatter-graph{
+    width: 25%;
+    background:transparent;
+  }
+
+  #correlation-graph{
+    width: 20%;
+    background:transparent;
+  }
+
+  #test-scatter-graph{
+    width: 25%;
+    background:transparent;
+  }
+
+  #test-knob{
+    width: 15%;
+  }

@@ -216,8 +216,9 @@ def merge_dataframes(commit):
                                                                        ])
 
 def merge_test_level_dataframes(commit):
-    return reduce(lambda x,y: pd.merge(x,y, on='test_name', how='outer'), [get_dataframe_unit_test_by_commit('resource', commit, resource_columns, 'unit_test_data', True),
-                                                                           get_dataframe_unit_test_by_commit('trace',commit, trace_columns, 'unit_test_info', True)
+    trace_columns = ['test_name','test_func_calls', 'line_numbers', 'per_test_iterations', 'encode_per_test_cond', 'result']
+    return reduce(lambda x,y: pd.merge(x,y, on='test_name', how='outer'), [get_dataframe_unit_test_by_commit('resource', commit, True),
+                                                                           get_dataframe_unit_test_by_commit('trace',commit,trace_columns, True)
     
                                                                       
                                                                        ])
@@ -225,12 +226,23 @@ def merge_test_level_dataframes(commit):
 #df = get_dataframe_unit_test_by_commit('resource', 'f1bc57db', resource_columns, 'unit_test_data')
 
 
-def normalized_data(df):
+def normalized_data(df, type=None):
+
+    if type == 'incorrelation':
+        columns = ['size','FunCalls', 'TExeStmt', 'TNoItr', 'ExeCond', 'mem', 'time']
+
+    else:
+        columns = ['test_func_calls', 'line_numbers', 'per_test_iterations', 'encode_per_test_cond', 'result','mem', 'time']
+
     from sklearn import preprocessing
     x = df.values #returns a numpy array
     min_max_scaler = preprocessing.MinMaxScaler()
     x_scaled = min_max_scaler.fit_transform(x)
-    normal_accumulated_df = pd.DataFrame(x_scaled)
+    
+    if type==None:
+        normal_accumulated_df = pd.DataFrame(x_scaled)
+    else:
+        normal_accumulated_df = pd.DataFrame(x_scaled, columns=columns)
     return normal_accumulated_df
 
 
