@@ -335,7 +335,7 @@ app.layout = html.Div(
                                     dcc.Dropdown(
                                         id='feature-dropdown',
                                         options=[
-                                            {'label': i, 'value': i} for i in input_df.columns
+                                            {'label': i, 'value': i} for i in ['size','FunCalls', 'TExeStmt', 'TNoItr', 'ExeCond', 'mem', 'time']
                                         ],
                                         multi=True,
                                         placeholder="Select features",
@@ -352,8 +352,10 @@ app.layout = html.Div(
                                     ),
                                     daq.Knob(
                                         id='input-setting-knob',
-                                        min=0,
+                                        min=1,
                                         max=10,
+                                        scale={"start":1, "labelInterval":1, "interval": 1}
+                                        
                                     ),
                                     
                             ] 
@@ -592,11 +594,13 @@ Input("input-setting-knob", "value"),
 )
 def input_clustering(clustering_type, feature_name, check_list_type, cluster_value):
     
+    if cluster_value == None:
+        cluster_value = 2  
 
-
-
+    if len (feature_name) < 2:
+        feature_name = ["mem", "time"]
     df = normalized_data(input_df, 'incorrelation')
-    df = clustering(clustering_type,df)
+    df = clustering(clustering_type,df, cluster_value)
 
     if '2D' in check_list_type:
              fig = px.scatter(x= df[feature_name[0]],y= df[feature_name[1]], color=df['Cluster'])
@@ -627,10 +631,11 @@ Input("test-setting-knob", "value"),
 )
 def test_clustering(clustering_type, feature_name, check_list_type, cluster_value):
     
-    print (clustering_type, feature_name, check_list_type, cluster_value)
+
+    cluster_value = int(cluster_value)
 
     df = normalized_data(test_df, 'testcorrelation')
-    df = clustering(clustering_type,df)
+    df = clustering(clustering_type,df,cluster_value)
 
     if '2D' in check_list_type:
              fig = px.scatter(x= df[feature_name[0]],y= df[feature_name[1]], color=df['Cluster'])

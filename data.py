@@ -246,13 +246,13 @@ def normalized_data(df, type=None):
     return normal_accumulated_df
 
 
-def clustering(clustering_algo,df):
+def clustering(clustering_algo,df, cluster_value):
     if clustering_algo == 'kmeans':
-        kmeans = KMeans(n_clusters = 5, init="k-means++", max_iter = 500, n_init = 10, random_state = 123)
+        kmeans = KMeans(n_clusters = cluster_value, init="k-means++", max_iter = 500, n_init = 10, random_state = 123)
         identified_clusters = kmeans.fit_predict(df)
         
     elif clustering_algo == 'agglomerative':    
-        hc = AgglomerativeClustering(n_clusters = 5, affinity = "euclidean", linkage = "ward")
+        hc = AgglomerativeClustering(n_clusters = cluster_value, affinity = "euclidean", linkage = "ward")
         identified_clusters = hc.fit_predict(df)
 
     elif clustering_algo == 'affinitypropagation':
@@ -265,7 +265,7 @@ def clustering(clustering_algo,df):
 
     elif clustering_algo == 'gmm':
         from sklearn import mixture
-        gmm = mixture.GaussianMixture(n_components=5, covariance_type='full').fit(df)
+        gmm = mixture.GaussianMixture(n_components=cluster_value, covariance_type='full').fit(df)
         identified_clusters = gmm.predict(df)
 
     
