@@ -40,9 +40,8 @@ Getting data for unit test vs execution time
 """
 def get_timeseries_data():
 
-    # Getting the commit value first    
+    # Getting the commit value first   
     commit_value = get_last_commit()
-
     
     # Get dataframe for resource topic based on last commit
     df = get_dataframe_unit_test_by_commit('resource', commit_value)
@@ -408,7 +407,7 @@ app.layout = html.Div(
                                     dcc.Dropdown(
                                         id='test-feature-dropdown',
                                         options=[
-                                            {'label': i, 'value': i} for i in test_df.columns
+                                            {'label': i, 'value': i} for i in ['test_func_calls', 'line_numbers', 'per_test_iterations', 'encode_per_test_cond', 'result','mem', 'time']
                                         ],
                                         multi=True,
                                         placeholder="Select features",
@@ -426,9 +425,9 @@ app.layout = html.Div(
                                     ),
                                     daq.Knob(
                                         id='test-setting-knob',
-                                        min=0,
+                                        min=1,
                                         max=10,
-                                        value=8
+                                        scale={"start":1, "labelInterval":1, "interval": 1}
                                     ),
                                     
                             ] 
@@ -480,10 +479,37 @@ def focus_button(*args):
 
 @app.callback(
     Output("timeseries-container", "figure"),
-    [Input('testselector', 'value')]
+    [Input('testselector', 'value'),
+    Input('btn-0', 'n_clicks'),
+    Input('btn-1', 'n_clicks'),
+    Input('btn-2', 'n_clicks'),
+    Input('btn-3', 'n_clicks'),
+    Input('btn-4', 'n_clicks'),]
+   
 )
-def timeseries_chart(selected_dropdown_value):
- 
+def timeseries_chart(selected_dropdown_value, btn_0_click, btn_1_click, btn_2_click, btn_3_click, btn_4_click):
+    
+    
+    ctx = dash.callback_context
+
+
+    if ctx.triggered[0]["prop_id"] != '.':
+    
+        # get id of triggering button
+        button_id = ctx.triggered[0]["prop_id"].split(".")[0]
+        # # Getting the id of the button
+        id = button_id.split("-")[1]
+
+        # # Convert the id from string to integer and then check if we don't have any commit, in such case there shouldnt be focus
+        id_to_int = int(id)
+        
+        commit_value = get_commits()[id_to_int]
+
+    else:
+        commit_value = get_commits()[4]
+
+    print (commit_value)
+
     trace = []
     df_sub = df
     # Draw and append traces for each stock
@@ -593,13 +619,19 @@ Input("input-setting-knob", "value"),
 
 )
 def input_clustering(clustering_type, feature_name, check_list_type, cluster_value):
-    
+
+   
+
     if cluster_value == None:
         cluster_value = 2  
 
     if len (feature_name) < 2:
         feature_name = ["mem", "time"]
+
     df = normalized_data(input_df, 'incorrelation')
+
+
+    cluster_value = int(cluster_value)
     df = clustering(clustering_type,df, cluster_value)
 
     if '2D' in check_list_type:
@@ -631,10 +663,14 @@ Input("test-setting-knob", "value"),
 )
 def test_clustering(clustering_type, feature_name, check_list_type, cluster_value):
     
+    if cluster_value == None:
+        cluster_value = 2  
 
-    cluster_value = int(cluster_value)
+    if len (feature_name) < 2:
+        feature_name = ["mem", "time"]
 
     df = normalized_data(test_df, 'testcorrelation')
+    cluster_value = int(cluster_value)
     df = clustering(clustering_type,df,cluster_value)
 
     if '2D' in check_list_type:

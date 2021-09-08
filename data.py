@@ -6,13 +6,6 @@ from sklearn.decomposition import PCA
 # pprint library is used to make the output look more pretty
 from pprint import pprint
 
-
-
-
-
-
-
-
 # Input-level resource dataframe columns
 input_resource_columns = ["_key","avg_mem" ,"avg_time"]
 
@@ -137,6 +130,7 @@ def get_dataframe_unit_test_by_commit(collection_name, commit, dataframe_columns
         df = pd.DataFrame(eval(test_case_document['unit_test_data']), columns=dataframe_columns)
 
     else:    
+
         test_case_document=col.find({'git_commit': {'$eq': commit}} )
         # Iterate over all documents and store them to a list 
         for data in test_case_document:
@@ -217,7 +211,7 @@ def merge_dataframes(commit):
 
 def merge_test_level_dataframes(commit):
     trace_columns = ['test_name','test_func_calls', 'line_numbers', 'per_test_iterations', 'encode_per_test_cond', 'result']
-    return reduce(lambda x,y: pd.merge(x,y, on='test_name', how='outer'), [get_dataframe_unit_test_by_commit('resource', commit, True),
+    return reduce(lambda x,y: pd.merge(x,y, on='test_name', how='outer'), [get_dataframe_unit_test_by_commit('resource', commit, None,True),
                                                                            get_dataframe_unit_test_by_commit('trace',commit,trace_columns, True)
     
                                                                       
@@ -243,7 +237,7 @@ def normalized_data(df, type=None):
         normal_accumulated_df = pd.DataFrame(x_scaled)
     else:
         normal_accumulated_df = pd.DataFrame(x_scaled, columns=columns)
-    return normal_accumulated_df
+    return normal_accumulated_df.dropna()
 
 
 def clustering(clustering_algo,df, cluster_value):
@@ -304,4 +298,3 @@ def clustering(clustering_algo,df, cluster_value):
 # df = normalized_data(df)
 
 # df = clustering('kmeans', df)
-
