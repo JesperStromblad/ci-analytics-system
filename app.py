@@ -14,7 +14,7 @@ import plotly.graph_objects as go
 import dash_daq as daq
 import plotly.express as px
 import numpy as np
-
+from paper.analysis import *
 
 # Initialize app
 
@@ -38,10 +38,10 @@ server = app.server
 """"
 Getting data for unit test vs execution time
 """
-def get_timeseries_data():
+def get_timeseries_data(commit_value):
 
     # Getting the commit value first   
-    commit_value = get_last_commit()
+    #commit_value = get_last_commit()
     
     # Get dataframe for resource topic based on last commit
     df = get_dataframe_unit_test_by_commit('resource', commit_value)
@@ -53,8 +53,8 @@ def get_timeseries_data():
 Getting total execution time for each CI run
 """
 
-def get_total_execution_time():
-    df = get_timeseries_data()
+def get_total_execution_time(commit):
+    df = get_timeseries_data(commit)
     return (df['execution_time'].sum()) * 0.000277778
 
 
@@ -102,6 +102,35 @@ def test_summary_table():
     return dbc.Table(table_header + table_body, bordered=True) 
 
 
+
+def get_current_commit_from_click_context(ctx):
+    
+    
+   # If we dont click on a button but some other context is handled e.g., selection from drop down menu
+    if 'value' in ctx.triggered[0]["prop_id"] :
+
+        commit_value = get_commits()[4]
+       
+    # If we click on a button
+    elif "n_clicks" in ctx.triggered[0]["prop_id"]:
+    
+            # get id of triggering button
+            button_id = ctx.triggered[0]["prop_id"].split(".")[0]
+
+            # # Getting the id of the button
+            id = button_id.split("-")[1]
+
+            # # Convert the id from string to integer and then check if we don't have any commit, in such case there shouldnt be focus
+            id_to_int = int(id)
+            
+            commit_value = get_commits()[id_to_int]
+
+    # Initial state, we want the last commit
+    elif "." in ctx.triggered[0]["prop_id"]:
+        commit_value = get_commits()[4]
+        
+    update_commit_memory(commit_value)
+    return commit_value 
 
 """"
 Getting features information for correlation matrix
@@ -201,7 +230,78 @@ app.layout = html.Div(
 
               ]
         ),
+            html.H3(children="Test Summary"),
 
+            html.Div(className='level2-container',
+            children =[ 
+                            
+                            daq.LEDDisplay(
+                                className='left-pass-test-panel',
+                                value=get_test_status()['test_name'].count(),
+                                size=70,
+                                label={'label': 'Total Executed Tests', 'style': {'font-size': '25px', 'font-weight': 'bold'}},
+                                color='rgb(85, 255, 241)',
+                                backgroundColor="#252e3f",
+                                theme = {
+                                'dark': 'true',
+                                'detail': '#007439',
+                                'primary': '#00EA64',
+                                'secondary': '#6E6E6E',
+                                },
+
+                            ),
+
+                            daq.LEDDisplay(
+                                        className='pass-test-panel',
+                                        label={'label': 'Tests Passed', 'style': {'font-size': '25px', 'font-weight': 'bold' }},
+                                        labelPosition="top",
+                                        value=get_test_success(),
+                                        size=70,
+                                        color='white',
+                                        backgroundColor="transparent",
+                                        theme = {
+                                            'dark': 'true',
+                                            'detail': '#007439',
+                                            'primary': '#00EA64',
+                                            'secondary': '#6E6E6E',
+                                        },
+                                    ),
+                            daq.LEDDisplay(
+                                            className='fail-test-panel',
+                                            labelPosition="top",
+                                            value=(get_test_status()['test_name'].count()-get_test_success()),
+                                            size=70,
+                                            color='white',
+                                            backgroundColor="transparent",
+                                            label={'label': 'Tests Failed', 'style': {'font-size': '25px', 'font-weight': 'bold'}},
+                                            theme = {
+                                                'dark': 'true',
+                                                'detail': '#007439',
+                                                'primary': '#00EA64',
+                                                'secondary': '#6E6E6E',
+                                            },
+                                    ) ,
+                                    
+                                
+                                
+
+
+                        
+
+                          
+                               
+                            html.Div(className='test-summary', 
+                                children=[test_summary_table()],
+
+                            )
+
+
+                        ],
+                
+        
+        ),
+
+        html.H3(children="Test Execution Summary"),
         html.Div(className='level1-container',
                                                      
                 children = [ 
@@ -212,7 +312,7 @@ app.layout = html.Div(
                                         {'label': i, 'value': i} for i in df["test_name"].unique()
                                         ],
                                         multi=True,
-                                        value = df['test_name'].drop_duplicates()[0],
+                                        value = [df['test_name'].drop_duplicates()[0]],
                                         style={'backgroundColor': '#1E1E1E'},
                                         className='stockselector'),
 
@@ -241,7 +341,7 @@ app.layout = html.Div(
                                         id="progress-gauge",
                                         max=24,
                                         min=0,
-                                        value=get_total_execution_time(),
+                                        value=get_total_execution_time(get_last_commit()),
                                         label="Total execution time",
                                         showCurrentValue=True,
                                         units='Hours'
@@ -254,46 +354,10 @@ app.layout = html.Div(
                 ],
                 
         ),
-
-        html.Div(className='level2-container',
-            children =[ 
-                            
-                            daq.LEDDisplay(
-                                className='left-pass-test-panel',
-                                label="Total tests",
-                                value=get_test_status()['test_name'].count(),
-                                size=64,
-                                color='rgb(85, 255, 241)',
-                                backgroundColor="transparent"
-                            ),
-                            html.Div(className="success-panel",
-                                children=[
-                                       daq.LEDDisplay(
-                                        className='pass-test-panel',
-                                        label="Total tests passed",
-                                        labelPosition="top",
-                                        value=get_test_success(),
-                                        size=20,
-                                        color='#15b7e8',
-                                        backgroundColor="transparent"
-                                    ),
-                                        daq.LEDDisplay(
-                                            className='fail-test-panel',
-                                            label="Total tests failure",
-                                            labelPosition="bottom",
-                                            value=(get_test_status()['test_name'].count()-get_test_success()),
-                                            size=20,
-                                            color='#f55b5b',
-                                            backgroundColor="transparent"
-                                    ) 
-                                    
-                                ]
-                                
-
-
-                            ),
-
-                            dcc.Graph(
+        html.H3(children="Memory Utilization and Correlation"),
+        html.Div(className='level5-container',
+            children = [
+                  dcc.Graph(
                                 id="bar-container",
                                 figure=dict(
                                     layout=dict(
@@ -302,17 +366,27 @@ app.layout = html.Div(
                                     )
                                 ),
                             ),
-                               
-                            html.Div(className='test-summary', 
-                                children=[test_summary_table()],
+                html.Div(
+                            id="correlation-graph",
+                            children=[
+                                dcc.Dropdown( 
+                                        id='correlation-selection',
+                                        options=[
+                                            {'label': 'Input feature correlation', 'value': 'incorrelation'},
+                                            {'label': 'Test feature correlation', 'value': 'testcorrelation'},
+                                            
+                                        ],
+                                        placeholder="Select a correlation",
+                                        value='incorrelation'
+                                    ),
+                                dcc.Graph(id='heatmap-chart'),
+                            ]
+                           
+                    ),
+            ],
 
-                            )
-
-
-                        ],
-                
-        
         ),
+        html.H3(children="Test Input Clustering"),
         html.Div(className='level3-container',
                 children= [
                     html.Div(
@@ -365,29 +439,14 @@ app.layout = html.Div(
                                 dcc.Graph(id='input-clustering-graph'),
                             ]  
                     ),
-                    html.Div(
-                            id="correlation-graph",
-                            children=[
-                                dcc.Dropdown( 
-                                        id='correlation-selection',
-                                        options=[
-                                            {'label': 'Input feature correlation', 'value': 'incorrelation'},
-                                            {'label': 'Test feature correlation', 'value': 'testcorrelation'},
-                                            
-                                        ],
-                                        placeholder="Select a correlation",
-                                        value='incorrelation'
-                                    ),
-                                dcc.Graph(id='heatmap-chart'),
-                            ]
-                           
-                    ),
-                    html.Div(
-                            id="test-scatter-graph",
-                            children=[
-                                dcc.Graph(id='test-clustering-graph'),
-                            ]  
-                    ),
+                    
+                    
+                    
+                ]
+        ),
+        html.H3(children="Unit Test Clustering"),
+        html.Div(className='level6-container',
+                children= [
                     html.Div(
                             id="test-knob",
                             children=[
@@ -430,10 +489,17 @@ app.layout = html.Div(
                                         scale={"start":1, "labelInterval":1, "interval": 1}
                                     ),
                                     
-                            ] 
-                    )
-                ]
-        )
+                            ],
+                            ),
+                        html.Div(
+                                    id="test-scatter-graph",
+                                        children=[
+                                            dcc.Graph(id='test-clustering-graph')
+                                        ] ,
+                        ),
+                    
+                                    
+                ]),
         
     ],
 )
@@ -478,17 +544,15 @@ def focus_button(*args):
 
 
 @app.callback(
-    Output("timeseries-container", "figure"),
-    [Input('testselector', 'value'),
+    Output("progress-gauge", "value"),
+     [
     Input('btn-0', 'n_clicks'),
     Input('btn-1', 'n_clicks'),
     Input('btn-2', 'n_clicks'),
     Input('btn-3', 'n_clicks'),
     Input('btn-4', 'n_clicks'),]
-   
 )
-def timeseries_chart(selected_dropdown_value, btn_0_click, btn_1_click, btn_2_click, btn_3_click, btn_4_click):
-    
+def update_progress_gauge(btn_0_click, btn_1_click, btn_2_click, btn_3_click, btn_4_click):
     
     ctx = dash.callback_context
 
@@ -508,7 +572,29 @@ def timeseries_chart(selected_dropdown_value, btn_0_click, btn_1_click, btn_2_cl
     else:
         commit_value = get_commits()[4]
 
-    print (commit_value)
+    
+    return get_total_execution_time(commit_value)
+
+
+@app.callback(
+    Output("timeseries-container", "figure"),
+    [Input('testselector', 'value'),
+    Input('btn-0', 'n_clicks'),
+    Input('btn-1', 'n_clicks'),
+    Input('btn-2', 'n_clicks'),
+    Input('btn-3', 'n_clicks'),
+    Input('btn-4', 'n_clicks'),]
+   
+)
+def timeseries_chart(selected_dropdown_value, *args): #btn_0_click, btn_1_click, btn_2_click, btn_3_click, btn_4_click):
+    
+
+    ctx = dash.callback_context
+
+    commit_value = get_current_commit_from_click_context(ctx)
+
+    # Get dataframe for resource topic based on last commit
+    df = get_dataframe_unit_test_by_commit('resource', commit_value)
 
     trace = []
     df_sub = df
@@ -550,9 +636,24 @@ def timeseries_chart(selected_dropdown_value, btn_0_click, btn_1_click, btn_2_cl
 # # Bar graph 
 @app.callback(
     Output("bar-container", "figure"),
-    [Input("temp", "children")],
+    [Input('btn-0', 'n_clicks'),
+    Input('btn-1', 'n_clicks'),
+    Input('btn-2', 'n_clicks'),
+    Input('btn-3', 'n_clicks'),
+    Input('btn-4', 'n_clicks')]
 )
-def bar_chart(no_args):
+def bar_chart(*args):
+
+    ctx = dash.callback_context
+
+    commit_value = get_current_commit_from_click_context(ctx)
+
+    # Get dataframe for resource topic based on last commit
+    df = get_dataframe_unit_test_by_commit('resource', commit_value)
+
+    # Calculate average memory for each test case
+    mem_df = get_resource_average(df, 'memory')
+
     trace= go.Bar(x=mem_df.test_name,
                                  y=mem_df.memory,
                                  opacity=0.7,
@@ -583,13 +684,31 @@ def bar_chart(no_args):
 
 @app.callback(
 Output("heatmap-chart", "figure"), 
-   [Input("correlation-selection", "value")]
+   [Input("correlation-selection", "value"),
+    Input('btn-0', 'n_clicks'),
+    Input('btn-1', 'n_clicks'),
+    Input('btn-2', 'n_clicks'),
+    Input('btn-3', 'n_clicks'),
+    Input('btn-4', 'n_clicks')
+   ]
 )
-def update_heat_map(selection):
+def update_heat_map(selection, *args):
+
+    ctx = dash.callback_context
+
+    current_commit_value = get_current_commit_from_click_context(ctx)
+
     df = get_data_for_matrix(selection, current_commit_value)
     #df.drop("test_name", axis=1, inplace=True)
     df=normalized_data(df,selection)
+
+    calculate_p_values_for_correlation(df, current_commit_value, selection)
+
     corr = df.corr()
+    
+    ## This is done for test result. Otherwise, transformation will result in Nan.
+    corr = corr.replace(np.NaN, 0 )
+
     trace = go.Heatmap(z=corr.values,
                   x=corr.index.values,
                   y=corr.columns.values)
@@ -615,24 +734,45 @@ Output("input-clustering-graph", "figure"),
 Input("feature-dropdown", "value"),
 Input("checklist-input", "value"),
 Input("input-setting-knob", "value"),
+Input("correlation-selection", "value"),
+Input('btn-0', 'n_clicks'),
+Input('btn-1', 'n_clicks'),
+Input('btn-2', 'n_clicks'),
+Input('btn-3', 'n_clicks'),
+Input('btn-4', 'n_clicks')
 ]
 
 )
-def input_clustering(clustering_type, feature_name, check_list_type, cluster_value):
+def input_clustering(clustering_type, feature_name, check_list_type, cluster_value, *args):
 
-   
+    ctx = dash.callback_context
+
+    commit_value = get_current_commit_from_click_context(ctx)
+
+    # # Get dataframe for resource topic based on last commit
+    df = get_dataframe_unit_test_by_commit('resource', commit_value)
+
+    # # Calculate average memory for each test case
+    mem_df = get_resource_average(df, 'memory')
+
+    input_df = merge_dataframes(commit_value)
+    input_df.drop("_key", axis=1, inplace=True)
+
 
     if cluster_value == None:
-        cluster_value = 2  
+        cluster_value = 4  
 
     if len (feature_name) < 2:
         feature_name = ["mem", "time"]
 
     df = normalized_data(input_df, 'incorrelation')
 
-
+    cluster_write_to_file(df, None,commit_value)
+    #elbow_identification(df, commit_value)
+    #compare_silhouette(df, commit_value)
     cluster_value = int(cluster_value)
     df = clustering(clustering_type,df, cluster_value)
+
 
     if '2D' in check_list_type:
              fig = px.scatter(x= df[feature_name[0]],y= df[feature_name[1]], color=df['Cluster'])
@@ -658,11 +798,29 @@ Output("test-clustering-graph", "figure"),
 Input("test-feature-dropdown", "value"),
 Input("checklist-test", "value"),
 Input("test-setting-knob", "value"),
+Input('btn-0', 'n_clicks'),
+Input('btn-1', 'n_clicks'),
+Input('btn-2', 'n_clicks'),
+Input('btn-3', 'n_clicks'),
+Input('btn-4', 'n_clicks')
 ]
 
 )
-def test_clustering(clustering_type, feature_name, check_list_type, cluster_value):
+def test_clustering(clustering_type, feature_name, check_list_type, cluster_value, *args):
     
+    ctx = dash.callback_context
+
+    commit_value = get_current_commit_from_click_context(ctx)
+
+    # # Get dataframe for resource topic based on last commit
+    df = get_dataframe_unit_test_by_commit('resource', commit_value)
+
+    # # Calculate average memory for each test case
+    mem_df = get_resource_average(df, 'memory')
+
+    test_df = merge_test_level_dataframes(commit_value)
+    test_df.drop("test_name", axis=1, inplace=True)
+
     if cluster_value == None:
         cluster_value = 2  
 

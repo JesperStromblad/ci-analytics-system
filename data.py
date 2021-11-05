@@ -24,6 +24,9 @@ collection_name = ["inputcase"]
 
 # connect to MongoDB, change the << MONGODB URL >> to reflect your own connection string
 client = MongoClient("mongodb://localhost:27017/admin")
+
+print ("Testing mongodb {}".format(client))
+
 # In our case, mongodb is not accessible from outside world. We can obviously set username and password
 db=client.admin
 
@@ -221,14 +224,14 @@ def merge_test_level_dataframes(commit):
 
 
 def normalized_data(df, type=None):
-
     if type == 'incorrelation':
         columns = ['size','FunCalls', 'TExeStmt', 'TNoItr', 'ExeCond', 'mem', 'time']
 
     else:
-        columns = ['test_func_calls', 'line_numbers', 'per_test_iterations', 'encode_per_test_cond', 'result','mem', 'time']
+        columns = ['mem', 'time', 'test_func_calls', 'line_numbers', 'per_test_iterations', 'encode_per_test_cond', 'result']
 
     from sklearn import preprocessing
+    import numpy as np
     x = df.values #returns a numpy array
     min_max_scaler = preprocessing.MinMaxScaler()
     x_scaled = min_max_scaler.fit_transform(x)
@@ -237,6 +240,7 @@ def normalized_data(df, type=None):
         normal_accumulated_df = pd.DataFrame(x_scaled)
     else:
         normal_accumulated_df = pd.DataFrame(x_scaled, columns=columns)
+
     return normal_accumulated_df.dropna()
 
 
