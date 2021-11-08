@@ -25,7 +25,6 @@ collection_name = ["inputcase"]
 # connect to MongoDB, change the << MONGODB URL >> to reflect your own connection string
 client = MongoClient("mongodb://localhost:27017/admin")
 
-print ("Testing mongodb {}".format(client))
 
 # In our case, mongodb is not accessible from outside world. We can obviously set username and password
 db=client.admin

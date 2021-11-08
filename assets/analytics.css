@@ -210,6 +210,7 @@
   }
 }
 
+
 /* Base Styles
 –––––––––––––––––––––––––––––––––––––––––––––––––– */
 /* NOTE
@@ -908,19 +909,64 @@ Buttons for commits
     gap: 5px;
     flex-direction: row;
     max-height: 40vh;
+
     
   }
 
+
+
+  .cluster-label{
+    background-color: #1f2630;
+    font-size: 2.5rem;
+    text-align: center;
+    color: white;
+    border: 1px solid white;
+  }
   
+  #checklist-input{
+    min-height: 5vh;
+    font-size: 2.5rem;
+  }
+ 
+  #checklist-test{
+    min-height: 5vh;
+    font-size: 2.5rem;
+  }
+  
+
+
   .div-for-dropdown{
     margin: 2.5rem 0 0 0;
     /* background-color: #252e3f; */
     min-width: 80%;
     background: #252e3f;
-    
+
   
   }
 
+.div-for-dropdown > div{
+  visibility: visible !important;
+}
+
+.gauge-container> div{
+  visibility: visible !important;
+}
+
+.level5-container > div{
+  visibility: visible !important;
+}
+
+#correlation-graph > div {
+  visibility: visible !important;
+}
+
+#input-scatter-graph > div {
+  visibility: visible !important;
+}
+
+#test-scatter-graph > div {
+  visibility: visible !important;
+}
   /* .gauge-container{
     margin: 2.5rem 0 0 2.5rem;
     min-width: 20%;
@@ -1025,7 +1071,7 @@ Buttons for commits
     display:flex;
     gap: 5px;
     flex-direction: row;
-    max-height: 50vh;
+    max-height: 80vh;
 
   }
 
@@ -1033,14 +1079,19 @@ Buttons for commits
     margin: 2.5rem 0 0 0;
     background: #252e3f;
     color: white;
-    min-width: 20%;
+
   }
+
+  #input-setting-knob{
+    color: white;
+  }
+
 
   #input-scatter-graph{
     margin: 2.5rem 0 0 0;
     background: #252e3f;
     color: white;
-    min-width: 78%;
+    min-width: 80%;
     border: 8px solid #252e3f;
   }
 
@@ -1079,7 +1130,7 @@ Buttons for commits
     display:flex;
     gap: 5px;
     flex-direction: row;
-    max-height: 50vh;
+    max-height: 80vh;
 
   }
 
