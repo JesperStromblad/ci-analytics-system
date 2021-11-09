@@ -24,18 +24,27 @@ There are different steps which needs to be taken in order to deploy back-end.
     ```
     
     - Create the connector
-    > $ bin/pulsar-admin sink create --sink-type mongo --sink-config-file mongodbcon/mongo-trace.yml --inputs TRACE_TOPIC
+     ```
+     $ bin/pulsar-admin sink create --sink-type mongo --sink-config-file mongodbcon/mongo-trace.yml --inputs TRACE_TOPIC 
+     ```
 
     - Test to check whether sink connector functions properly
-    > $ bin/pulsar-client produce -m "{'test:' 'trace'}" TRACE_TOPIC
-
+    ```
+     $ bin/pulsar-client produce -m "{'test:' 'trace'}" TRACE_TOPIC
+    ```
     - Check whether the message is in the mongodb database
-    > $ docker exec -it mongodb mongo
+    ```
+    $ docker exec -it mongodb mongo
+    ```
+
+    ```
+    $ use ci-db
+    ```
+
+    ```
+    $ db.trace.find()
+    ```
     
-    > $ use ci-db
-
-    > db.trace.find()
-
     - There will be a record in the collection trace.
 
 - **CI analysis:**  back-end of the analytic system takes analysis data from CI process via PerfCI plugin. More information about PerfCI and how it can be setup with your Python-project can be found in the [article](https://ieeexplore.ieee.org/document/9286019) and the code is available on [GitHub](https://github.com/JesperStromblad/perfci).
