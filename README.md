@@ -13,7 +13,7 @@ Ideally, the front-end and back-end can be deployed on different VMs.
 ### Back-end deployment
 There are different steps which needs to be taken in order to deploy back-end. 
 
-- **CI Data Streaming:** This requires setting up of Apache pulsar components such as broker. This can be found in Pulsar official [documentation](https://pulsar.apache.org/). Secondly, mongo connector that needs to be installed which can be found in the [link](https://pulsar.apache.org/download/). More information on  mongo connector can be found in the MongoDB sink connector[documentation](https://pulsar.apache.org/docs/en/io-mongo-sink/). MongoDB sink connector can be setup by doing as follows:
+- **CI Data Streaming:** This requires setting up of Apache pulsar components such as broker. This can be found in Pulsar official [documentation](https://pulsar.apache.org/). Secondly, mongo connector that needs to be installed which can be found in the [link](https://pulsar.apache.org/download/). More information on  mongo connector can be found in the MongoDB sink connector [documentation](https://pulsar.apache.org/docs/en/io-mongo-sink/). MongoDB sink connector can be setup by doing as follows:
     - First setup mongodb container: 
     > $ docker run -d -p 27017-27019:27017-27019 --name mongodb mongo
     - Create mongo sink files. This is a yaml file e.g., mongodbcon/mongo-trace.yml
