@@ -2,7 +2,7 @@
 
 This repository contains front-end code for analyzing Python-based projects. The front-end is developed as a part of the research work conducted for improving performance testing during DevOps practices at CERN. We provide instructions of how to deploy back-end for collecting CI data.
 
-## Demo for our prototype analytics system is [available](http://129.16.123.244:8050/)
+## Demo for our prototype analytics system is available [here](http://129.16.123.244:8050/)
 
 
 ## Overview of our analytic system
