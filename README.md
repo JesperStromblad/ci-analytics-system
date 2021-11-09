@@ -1,8 +1,13 @@
 # Analytics system for Continuous Integration (CI) of Python Projects
 
-This repository contains front-end code for analyzing Python-based projects. The front-end is developed as a part of the research work conducted for improving performance testing during DevOps practices at CERN.
+This repository contains front-end code for analyzing Python-based projects. The front-end is developed as a part of the research work conducted for improving performance testing during DevOps practices at CERN. We provide instructions of how to deploy back-end for collecting CI data.
+
+## Overview of our analytic system
+<img src="/images/overview.jp2" alt="drawing" width="640" height="240"/>
+
 
 ## Setting the analytic system for CI data analysis
+Ideally, the front-end and back-end can be deployed on different VMs.
 
 ### Back-end deployment
 There are different steps which needs to be taken in order to deploy back-end. 
@@ -44,7 +49,7 @@ There are different steps which needs to be taken in order to deploy back-end.
     ```
     $ db.trace.find()
     ```
-    
+
     - There will be a record in the collection trace.
 
 - **CI analysis:**  back-end of the analytic system takes analysis data from CI process via PerfCI plugin. More information about PerfCI and how it can be setup with your Python-project can be found in the [article](https://ieeexplore.ieee.org/document/9286019) and the code is available on [GitHub](https://github.com/JesperStromblad/perfci).
