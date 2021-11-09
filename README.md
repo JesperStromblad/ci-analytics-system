@@ -3,7 +3,7 @@
 This repository contains front-end code for analyzing Python-based projects. The front-end is developed as a part of the research work conducted for improving performance testing during DevOps practices at CERN. We provide instructions of how to deploy back-end for collecting CI data.
 
 ## Overview of our analytic system
-<img src="./images/overview.png" alt="drawing" width="640" height="240"/>
+<img src="./images/overview.png" alt="drawing" width="2,048" height="1080"/>
 
 
 ## Setting the analytic system for CI data analysis
