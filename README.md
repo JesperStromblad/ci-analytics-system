@@ -6,7 +6,7 @@ This repository contains front-end code for analyzing Python-based projects. The
 
 ## Overview of our analytic system
 
-<img src="./images/overview.png" alt="drawing" width="800" height="600"/>
+<img src="./images/overview.png" alt="drawing" width="600" height="400"/>
 
 PerfCI toolchain, Streaming which takes place in a CI process constitutes the back-end of our analytic system. On the other hand, CI analytics is the front-end.
 
